@@ -1,0 +1,55 @@
+require 'support/active_model'
+
+RSpec.shared_examples_for Hubspot::Resource do
+  it_behaves_like ActiveModel
+
+  let(:class_name) { described_class.name.underscore.split('/').last.pluralize }
+  let(:resource_class) { Hubspot::Portal::DEMO.send class_name }
+  let(:resource) { resource_class.new }
+
+  describe '#connection' do
+    it 'returns a Faraday::Connection' do
+      expect(resource.connection).to be_a_kind_of(Faraday::Connection)
+    end
+
+    it 'delegates to .connection' do
+      expect(resource_class).to receive(:connection)
+      resource.connection
+    end
+  end
+
+  describe '.connection' do
+    it 'returns a Faraday::Connection' do
+      expect(resource_class.connection).to be_a_kind_of(Faraday::Connection)
+    end
+
+    it 'delegates to .portal' do
+      portal = double('Hubspot::Portal')
+      allow(resource_class).to receive(:portal).and_return(portal)
+      expect(resource_class.portal).to receive(:connection)
+      resource_class.connection
+    end
+  end
+
+  describe '.portal' do
+    it 'returns a Hubspot::Portal' do
+      expect(resource_class.portal).to be_a_kind_of(Hubspot::Portal)
+    end
+  end
+
+  Faraday::Connection::METHODS.each do |method|
+    describe "##{method}" do
+      it 'delegates to #connection' do
+        expect(resource.connection).to receive(method)
+        resource.send method
+      end
+    end
+
+    describe ".#{method}" do
+      it 'delegates to .connection' do
+        expect(resource_class.connection).to receive(method)
+        resource_class.send method
+      end
+    end
+  end
+end
