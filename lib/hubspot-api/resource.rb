@@ -15,10 +15,11 @@ class Hubspot::Resource < Hubspot::Api
     end
   end
 
-  def initialize(portal, data)
+  def initialize(portal, data, persisted = false)
     super(portal)
     @data = data
     @destroyed = false
+    @persisted = persisted
     @errors = Hash.new([])
   end
 
@@ -27,7 +28,7 @@ class Hubspot::Resource < Hubspot::Api
   end
 
   def persisted?
-    !destroyed? && !id.to_s.strip.empty?
+    !destroyed? && @persisted
   end
 
   def to_key
@@ -48,7 +49,9 @@ class Hubspot::Resource < Hubspot::Api
     if response.success?
       block ? block.call : true
     else
-      @errors[:base] += ["HTTP #{response.status}: #{response.body['message']}"]
+      message = "HTTP #{response.status}"
+      message += ": #{response.body['message']}" if response.body
+      @errors[:base] += [message]
       false
     end
   end

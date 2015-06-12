@@ -1,14 +1,15 @@
 require 'hubspot-api'
 
 #
-class Hubspot::Form < Hubspot::Resource
+class Hubspot::ContactPropertyGroup < Hubspot::Resource
   def id
-    data['guid']
+    data['name']
   end
 
   def save
     fail if destroyed?
-    response = connection.post("/contacts/v1/forms/#{id if persisted?}", data)
+    path = "named/#{id}" if persisted?
+    response = connection.post("/contacts/v2/groups/#{path}", data)
     handle_response(response) do
       data.replace(response.body)
       @errors.clear
@@ -25,7 +26,7 @@ class Hubspot::Form < Hubspot::Resource
 
   def destroy
     fail if destroyed?
-    response = connection.delete("/contacts/v1/forms/#{id}")
+    response = connection.delete("/contacts/v2/groups/named/#{id}")
     handle_response(response) do
       @destroyed = true
     end
@@ -33,7 +34,7 @@ class Hubspot::Form < Hubspot::Resource
 
   class Api < Hubspot::Api
     def new(data = {}, persisted = false)
-      Hubspot::Form.new(portal, data, persisted)
+      Hubspot::ContactPropertyGroup.new(portal, data, persisted)
     end
 
     def create(data = {})
@@ -41,13 +42,13 @@ class Hubspot::Form < Hubspot::Resource
     end
 
     def all
-      response = connection.get('/contacts/v1/forms')
+      response = connection.get('/contacts/v2/groups')
       fail(response.body['message']) unless response.success?
       response.body.map { |data| new(data, true) }
     end
 
     def find(id)
-      response = connection.get("/contacts/v1/forms/#{id}")
+      response = connection.get("/contacts/v2/groups/named/#{id}")
       fail(response.body['message']) unless response.success?
       new(response.body, true)
     end
